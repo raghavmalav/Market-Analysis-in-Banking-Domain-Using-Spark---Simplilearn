@@ -1,0 +1,51 @@
+1)val bank_data = spark.read.option("multiline","true").json("/user/raghav123malavgmail/bank_edited.json");
+
+2)bank_data.show()
+
+3)bank_data.agg(max("age")).show()
+
+4)bank_data.agg(min("age")).show()
+
+5)bank_data.agg(avg("age")).show()
+
+6)bank_data.agg(avg("balance")).show()
+
+7)bank_data.createOrReplaceTempview("median_bal")
+
+8)val median = spark.sql("SELECT percentile_approx(balance, 0.5) FROM median_bal").show()
+
+9)val agedata = spark.sql("select age, count(*) as number from median_bal where y='yes' group by age order by number desc")
+agedata.show()
+
+10)val maritaldata = spark.sql("select marital, count(*) as number from median_bal where y='yes' group by marital order by number desc")
+maritaldata.show()
+
+11)val ageandmaritaldata = spark.sql("select age, marital, count(*) as number from median_bal where y='yes' group by age,marital order by number desc")
+ageandmaritaldata.show()
+
+12)val agedata = spark.udf.register("agedata",(age:Int) => {
+if (age < 20)
+"Teen"
+else if (age > 20 && age <= 32)
+"Young"
+else if (age > 33 && age <= 55)
+"Middle Aged"
+else
+"old"
+})
+
+13)val banknewDF = bank_people_data.withColumn("age",agedata(bank_people_data("age")))
+banknewDF.show()
+
+14)banknewDF.registerTempTable("banknewtable")
+
+15)val targetage = spark.sql("select age, count(*) as number from banknewtable where y='yes' group by age order by number desc")
+targetage.show()
+
+16)import org.apache.spark.ml.feature.StringIndexer
+
+17)val agedata2 = new StringIndexer().setInputCol("age").setOutputCol("ageindex")
+
+18)var strindModel = agedata2.fit(banknewDF)
+
+19)strindModel.transform(banknewDF).select("age","ageIndex").show(10)
